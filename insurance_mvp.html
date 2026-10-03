@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Insurance on the Go</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F1F4F4; --surface:#FFFFFF; --ink:#12202B; --muted:#586976; --line:#D3DCE1;
+  --sign:#0F2A43; --sign-ink:#FFFFFF; --sign-muted:#B9C8D7; --sign-line:#274562;
+  --ok:#23A06A; --warn:#E5A800; --alert:#C23B2E; --user:#D3E3F2; --focus:#1B6FD1;
+  --btn:#0F2A43; --btn-ink:#FFFFFF;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D151C; --surface:#15212B; --ink:#E7EEF3; --muted:#9BABB7; --line:#27394A;
+    --sign:#0B2239; --sign-line:#2C4D6E; --user:#1D3954; --focus:#6AA9F0;
+    --btn:#2D6CB5; --btn-ink:#FFFFFF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D151C; --surface:#15212B; --ink:#E7EEF3; --muted:#9BABB7; --line:#27394A;
+  --sign:#0B2239; --sign-line:#2C4D6E; --user:#1D3954; --focus:#6AA9F0;
+  --btn:#2D6CB5; --btn-ink:#FFFFFF;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+html,body{height:100%;margin:0;}
+*,*::before,*::after{box-sizing:inherit;}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:16px;line-height:1.45;
+}
+button,input,textarea,select{font:inherit;color:inherit;}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;}
+#app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line);}
+.brand{min-width:0;flex:1;}
+.brand h1{margin:0;font-size:16px;font-weight:800;letter-spacing:-0.01em;white-space:nowrap;}
+.brand p{margin:2px 0 0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top-actions{display:flex;gap:8px;flex:none;}
+.small-btn{background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:12.5px;cursor:pointer;color:var(--ink);white-space:nowrap;}
+.small-btn:hover{background:var(--bg);}
+.view{flex:1;min-height:0;display:flex;flex-direction:column;}
+
+/* intake */
+.intake{overflow-y:auto;padding:22px 18px 32px;}
+.intake h2{margin:0 0 8px;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-0.02em;}
+.intake .lede{margin:0 0 20px;color:var(--muted);font-size:15px;}
+.field{margin:0 0 16px;}
+.field label{display:block;font-weight:600;font-size:14.5px;margin-bottom:6px;}
+.field .hint{display:block;font-weight:400;color:var(--muted);font-size:13px;margin-top:2px;}
+.field input[type="text"],.field select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:16px;}
+.consent{display:flex;gap:10px;align-items:flex-start;margin:6px 0 18px;font-size:14px;}
+.consent input{margin-top:3px;width:18px;height:18px;flex:none;}
+.notice{margin:0 0 16px;padding:12px 14px;border-left:5px solid var(--warn);background:var(--surface);border-radius:6px;font-size:14px;}
+.primary{width:100%;padding:13px 16px;border:0;border-radius:12px;background:var(--btn);color:var(--btn-ink);font-weight:800;font-size:16px;cursor:pointer;}
+.primary:disabled{opacity:.45;cursor:not-allowed;}
+
+/* chat */
+#chat{flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+#chat > *{flex:none;}
+.msg{max-width:88%;padding:10px 14px;border-radius:18px;font-size:15.5px;white-space:pre-wrap;overflow-wrap:anywhere;}
+.msg.bot{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px;}
+.msg.user{align-self:flex-end;background:var(--user);border-bottom-right-radius:6px;}
+.msg.note{font-size:13.5px;color:var(--muted);}
+.msg.alert{border-left:6px solid var(--alert);}
+.msg a{color:inherit;font-weight:600;}
+.typing{align-self:flex-start;display:flex;gap:5px;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:18px;border-bottom-left-radius:6px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.1s infinite ease-in-out;}
+.dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.dot{animation:none;opacity:.6}}
+
+/* the reply as a wayfinding sign */
+.sign{align-self:stretch;background:var(--sign);color:var(--sign-ink);border:1px solid var(--sign-line);border-radius:14px;overflow:hidden;}
+.sign-head{padding:16px 16px 12px;}
+.sign-name{margin:0;font-size:22px;line-height:1.15;font-weight:800;letter-spacing:-0.015em;}
+.sign-addr{margin:6px 0 0;color:var(--sign-muted);font-size:14.5px;}
+.sign-status{display:flex;gap:10px;align-items:flex-start;margin:12px 0 0;font-size:13.5px;}
+.bullet{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:800;}
+.bullet.ok{background:var(--ok);}
+.bullet.warn{background:var(--warn);color:#1A1A1A;}
+.sign-actions{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 16px;}
+.pill{display:inline-flex;align-items:center;justify-content:center;padding:9px 16px;border-radius:999px;background:#fff;color:#0F2A43;font-weight:600;font-size:14px;text-decoration:none;border:1px solid #fff;cursor:pointer;}
+.pill.ghost{background:transparent;color:#fff;border-color:var(--sign-muted);}
+.sign-body{background:var(--surface);color:var(--ink);padding:14px 16px;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);}
+.sign-body p{margin:0;font-size:14.5px;}
+.sign-body .quiet{color:var(--muted);font-size:13.5px;}
+.say{background:var(--bg);border-radius:10px;padding:10px 12px;}
+.say .say-label{font-weight:600;font-size:13.5px;margin-bottom:4px;}
+.say blockquote{margin:0 0 8px;font-size:14.5px;}
+.copy{background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;}
+.nearby{align-self:stretch;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px;}
+.nearby h3{margin:0 0 6px;font-size:14.5px;font-weight:800;}
+.nearby ul{list-style:none;margin:0;padding:0;}
+.nearby li{padding:8px 0;border-top:1px solid var(--line);font-size:14.5px;}
+.nearby li:first-child{border-top:0;}
+.nearby .sub{color:var(--muted);font-size:13.5px;}
+.nearby a{color:inherit;font-weight:600;white-space:nowrap;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-self:flex-start;}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer;}
+.chip:hover{border-color:var(--ink);}
+.fine{font-size:12.5px;color:var(--muted);align-self:flex-start;max-width:92%;}
+
+/* composer */
+.examples{display:flex;align-items:center;gap:8px;padding:8px 16px 0;overflow-x:auto;scrollbar-width:thin;}
+.examples span{flex:none;font-size:13px;color:var(--muted);}
+.examples .chip{flex:none;white-space:nowrap;padding:6px 12px;font-size:13px;}
+.composer{display:flex;gap:8px;align-items:flex-end;padding:10px 16px 14px;}
+.composer textarea{flex:1;resize:none;max-height:110px;padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-size:16px;line-height:1.35;}
+.send{flex:none;height:44px;padding:0 18px;border:0;border-radius:14px;background:var(--btn);color:var(--btn-ink);font-weight:800;cursor:pointer;}
+.send:disabled{opacity:.45;cursor:not-allowed;}
+
+/* study log dialog */
+dialog{width:min(94vw,720px);max-height:86vh;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:0;}
+dialog::backdrop{background:rgba(5,12,18,.55);}
+.dlg{display:flex;flex-direction:column;max-height:86vh;}
+.dlg header{padding:16px 18px 8px;}
+.dlg h2{margin:0;font-size:19px;font-weight:800;}
+.dlg .sub{margin:4px 0 0;color:var(--muted);font-size:13.5px;}
+.dlg .tablewrap{overflow:auto;padding:0 18px;}
+.dlg table{border-collapse:collapse;width:100%;font-size:13px;min-width:560px;}
+.dlg th,.dlg td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+.dlg th{font-weight:800;position:sticky;top:0;background:var(--surface);}
+.dlg footer{display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Insurance on the Go</h1>
+      <p>Where to go for minor care</p>
+    </div>
+    <div class="top-actions">
+      <button class="small-btn" id="logBtn" type="button">Study log</button>
+      <button class="small-btn" id="resetBtn" type="button">Start over</button>
+    </div>
+  </header>
+  <main class="view" id="view"></main>
+</div>
+
+<dialog id="logDlg" aria-labelledby="logTitle">
+  <div class="dlg">
+    <header>
+      <h2 id="logTitle">Study log</h2>
+      <p class="sub" id="logSub"></p>
+    </header>
+    <div class="tablewrap" id="logTable"></div>
+    <footer>
+      <button class="small-btn" id="dlBtn" type="button">Download CSV</button>
+      <button class="small-btn" id="cpBtn" type="button">Copy CSV</button>
+      <button class="small-btn" id="clrBtn" type="button">Clear log</button>
+      <button class="small-btn" id="closeBtn" type="button">Close</button>
+    </footer>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- facts from Harvard's public pages, checked Oct 3, 2026 ---------- */
+  var CHECKED_ON = 'Oct 3, 2026';
+  var BCBS_FIND = 'https://www.bluecrossma.com/findadoctor';
+  var PORTAL = 'https://huhs.harvard.edu/patients-and-visitors/patient-portal/';
+  var HUHS_PHONE = '(617) 495-5711';
+  var MEMBER_PHONE = '(617) 495-2008';
+  var CAMHS_PHONE = '(617) 495-2042';
+
+  var PLANS = [
+    { id: 'hushp', label: 'Harvard Student Health Program (Blue Cross PPO)', short: 'HUSHP (Blue Cross PPO)', ok: true },
+    { id: 'other', label: 'Something else', short: '', ok: false }
+  ];
+  var ZONE_LABEL = { cambridge: 'Cambridge', boston: 'Boston' };
+
+  var HUHS_URGENT = { name: 'HUHS Urgent Care', address: 'Smith Campus Center, 3rd Floor, 75 Mount Auburn St', city: 'Cambridge, MA 02138', phone: HUHS_PHONE };
+  var HUHS_PRIMARY = { name: 'Your HUHS primary care team', address: 'Smith Campus Center, 75 Mount Auburn St', city: 'Cambridge, MA 02138', phone: HUHS_PHONE };
+
+  // In-network Blue Cross clinics, checked by hand in Find a Doctor on Oct 3, 2026.
+  // lat/lng are approximate (placed from the street address) and are only used to sort by closeness.
+  // services come from each clinic's own website or its Solv listing: true = listed, 'call' = listed but
+  // the clinic says to confirm first, missing = not checked. hours come from the clinic's website where
+  // I found them (Eastern time): wk = Mon-Fri, we = Sat-Sun, as [open hour, close hour].
+  var HUHS_GEO = { lat: 42.3728, lng: -71.1172 };
+  var BOSTON_GEO = { lat: 42.3555, lng: -71.0620 };
+  var ZONE_CENTER = { cambridge: HUHS_GEO, boston: BOSTON_GEO };
+  var NETWORK = [
+    { name: 'AFC Urgent Care Back Bay', type: 'urgent_care', address: '575 Boylston St, 1st Floor', city: 'Boston, MA 02116', phone: '(617) 869-0500',
+      lat: 42.3497, lng: -71.0765, services: { xray: true, stitches: true }, hours: { wk: [8, 20], we: [8, 20] } },
+    { name: 'Carbon Health Medical Group of Florida PA', type: 'urgent_care', address: '80 Summer St, Suite 1', city: 'Boston, MA 02110', phone: '(617) 865-2749',
+      lat: 42.3551, lng: -71.0588, services: {} },
+    { name: 'CVS Healthcare Practices PLLC', type: 'urgent_care', address: '21 Austin St, Suite B', city: 'Charlestown, MA 02129', phone: '(781) 362-6723',
+      lat: 42.3738, lng: -71.0626, services: {} },
+    { name: 'Holtzman Urgent Care LLC', type: 'urgent_care', address: '1180 Beacon St, Suite 6B', city: 'Brookline, MA 02446', phone: '(781) 770-4064',
+      lat: 42.3414, lng: -71.1234, services: {} },
+    { name: 'AFC Urgent Care (Chestnut Hill)', type: 'urgent_care', address: '1210 Boylston St', city: 'Chestnut Hill, MA 02467', phone: '(617) 582-2200',
+      lat: 42.3267, lng: -71.1646, services: { xray: true, stitches: true } },
+    { name: 'AFC Urgent Care (Watertown)', type: 'urgent_care', address: '376 Arsenal St', city: 'Watertown, MA 02472', phone: '(617) 923-2273',
+      lat: 42.3656, lng: -71.1690, services: { xray: 'call', stitches: true }, hours: { wk: [8, 20], we: [8, 17] } },
+    { name: 'AFC Urgent Care (Medford)', type: 'urgent_care', address: '4110 Mystic Valley Pkwy, Suite 2', city: 'Medford, MA 02155', phone: '(617) 582-2800',
+      lat: 42.4040, lng: -71.0830, services: {} }
+  ];
+  // Neighborhood centers for typed locations (approximate). More specific names come first.
+  var NEIGHBORHOODS = [
+    { re: /\b(harvard medical school|hms|longwood)\b/i, lat: 42.3370, lng: -71.1030 },
+    { re: /\b(harvard square|harvard yard|harvard)\b/i, lat: 42.3736, lng: -71.1190 },
+    { re: /\bback bay\b/i, lat: 42.3503, lng: -71.0810 },
+    { re: /\b(brookline|coolidge corner)\b/i, lat: 42.3370, lng: -71.1212 },
+    { re: /\bfenway\b/i, lat: 42.3467, lng: -71.0972 },
+    { re: /\ballston\b/i, lat: 42.3539, lng: -71.1337 },
+    { re: /\bdavis square\b/i, lat: 42.3967, lng: -71.1226 },
+    { re: /\bporter square\b/i, lat: 42.3884, lng: -71.1191 },
+    { re: /\bsomerville\b/i, lat: 42.3876, lng: -71.0995 },
+    { re: /\bcentral square\b/i, lat: 42.3654, lng: -71.1038 },
+    { re: /\b(kendall|mit)\b/i, lat: 42.3629, lng: -71.0865 },
+    { re: /\binman square\b/i, lat: 42.3736, lng: -71.0990 },
+    { re: /\bcharlestown\b/i, lat: 42.3782, lng: -71.0602 },
+    { re: /\bsouth end\b/i, lat: 42.3402, lng: -71.0724 },
+    { re: /\bbeacon hill\b/i, lat: 42.3588, lng: -71.0707 },
+    { re: /\bseaport\b/i, lat: 42.3519, lng: -71.0434 },
+    { re: /\bnorth end\b/i, lat: 42.3647, lng: -71.0542 },
+    { re: /\bjamaica plain\b/i, lat: 42.3099, lng: -71.1136 },
+    { re: /\bdowntown\b/i, lat: 42.3555, lng: -71.0600 }
+  ];
+
+  /* ---------- language rules ---------- */
+  var ZONES = {
+    boston: { strong: /\b(boston|back bay|fenway|longwood|south end|beacon hill|seaport|north end|jamaica plain|brookline|harvard medical school|hms|chan school|hsph)\b/i },
+    cambridge: {
+      strong: /\b(harvard square|harvard yard|harvard|cambridge|allston|somerville|davis square|porter square|central square|kendall|mit|inman square)\b/i,
+      exclude: /\b(uk|england|ontario|canada|maryland|md|ohio|minnesota|nebraska|idaho|wisconsin|new zealand|nz)\b/i
+    }
+  };
+  var ZONE_ORDER = ['boston', 'cambridge'];
+
+  var SELFHARM_RE = /(suicid\w*|kill myself|want to die|end my life|hurt myself|harm myself|self[- ]harm)/i;
+  var URGENT_RE = /(chest pain|chest tightness|trouble breathing|can'?t breathe|cannot breathe|short(ness)? of breath|difficulty breathing|severe bleeding|won'?t stop bleeding|bleeding (a lot|heavily)|overdos\w*|unconscious|passed out|fainted|seizure|stroke|face (is )?droop\w*|slurred speech|throat (is )?(closing|swelling)|anaphyla\w*|swelling of (my )?(face|tongue|throat)|head injury|hit my head|poison\w*|coughing (up )?blood|vomiting blood|worst headache)/i;
+  var INFANT_RE = /\b(baby|infant|newborn|\d+[- ]?(week|wk|month|mo)s?[- ]old)\b/i;
+  var MENTAL_RE = /\b(anxiety|anxious|panic|depress\w*|therap(y|ist)|counsel(l)?ing|mental health|psychiatr\w*)\b/i;
+  var PROBLEM_RE = /\b(cough(ing)?|cold|fever|sore throat|throat|flu|covid|strep|ear ?ache|ear infection|ear|sinus|congest\w*|rash|hives|sprain\w*|strain\w*|ankle|wrist|knee|cut|gash|stitches|burn|sting|bite|vomit\w*|nausea|diarrhea|stomach|uti|urinary|pink eye|eye|allerg\w*|headache|migraine|back pain|injur\w*|hurts?|pain|sick|infection|swollen|swelling|bruise|twisted|rolled|fell|dizzy)\b/i;
+  var PRIMARY_RE = /\b(check-?up|physical|refill|annual|regular doctor|primary care|pcp|not urgent|no rush|new doctor|find a doctor|follow-?up)\b/i;
+  var TELE_RE = /\b(telehealth|tele-?medicine|virtual|video (visit|call)|can'?t leave|cannot leave|no time|from my (room|hotel|apartment)|on the road|airport|stuck in)\b/i;
+  var CHILD_RE = /\b(my (son|daughter|child|kid|kids|toddler)|toddler|my little (one|girl|boy)|son|daughter|child|kid)\b/i;
+  var HELLO_RE = /^\s*(hi|hello|hey|help|start)\b/i;
+  var PLACE_CUE = /\b(?:[Ii]n|[Nn]ear|[Vv]isiting|[Aa]round|[Tt]rip to|[Tt]raveling to|[Tt]ravelling to)\s+((?:[A-Z][\w'.\-]*)(?:\s+(?:of|de|la|[A-Z][\w'.\-]*)){0,3})/;
+
+  var NOUN_REASON = {
+    'cough': 'a cough', 'coughing': 'a cough', 'fever': 'a fever', 'sore throat': 'a sore throat',
+    'throat': 'a sore throat', 'cold': 'a cold', 'flu': 'the flu', 'ankle': 'an ankle injury',
+    'sprain': 'a sprain', 'sprained': 'a sprain', 'wrist': 'a wrist injury', 'knee': 'a knee injury',
+    'rash': 'a rash', 'headache': 'a headache', 'cut': 'a cut', 'burn': 'a burn',
+    'ear infection': 'an ear infection', 'earache': 'an earache', 'pink eye': 'pink eye', 'uti': 'a possible UTI'
+  };
+
+  /* ---------- tiny helpers ---------- */
+  function h(tag, attrs) {
+    var e = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        var v = attrs[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === 'class') e.className = v;
+        else if (k === 'text') e.textContent = v;
+        else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+        else e.setAttribute(k, v === true ? '' : v);
+      });
+    }
+    for (var i = 2; i < arguments.length; i++) {
+      var kids = [].concat(arguments[i]);
+      for (var j = 0; j < kids.length; j++) {
+        var c = kids[j];
+        if (c === null || c === undefined || c === false) continue;
+        e.appendChild(c.nodeType ? c : document.createTextNode(String(c)));
+      }
+    }
+    return e;
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+  function planById(id) { return PLANS.filter(function (p) { return p.id === id; })[0] || PLANS[0]; }
+  function telHref(phone) { return 'tel:' + String(phone).replace(/\D/g, ''); }
+  function mapsHref(p) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ' ' + p.address + ' ' + p.city); }
+  function huhsOpen() {
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false }).formatToParts(new Date());
+      var hr = 0;
+      parts.forEach(function (p) { if (p.type === 'hour') hr = parseInt(p.value, 10) % 24; });
+      return hr >= 8 && hr < 18;
+    } catch (e) { return true; }
+  }
+
+  async function copyText(text, btn) {
+    var ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+      try {
+        var ta = h('textarea', { 'aria-hidden': 'true' });
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        ok = document.execCommand('copy'); document.body.removeChild(ta);
+      } catch (e2) { ok = false; }
+    }
+    if (btn) {
+      var old = btn.textContent;
+      btn.textContent = ok ? 'Copied' : 'Select and copy';
+      setTimeout(function () { btn.textContent = old; }, 1600);
+    }
+  }
+
+  /* ---------- state ---------- */
+  var S = {
+    user: store.get('ioth.harvard.user'),
+    log: store.get('ioth.harvard.log') || [],
+    ctx: { loc: null, problem: null, lastProblem: null, awaitingLocation: false, awaitingProblem: false },
+    busy: false
+  };
+  var chatEl = null, inputEl = null, sendBtn = null;
+  var downloadsCap = null;
+  if (window.claude && typeof window.claude.use === 'function') {
+    try {
+      window.claude.use('downloads').then(function (d) { downloadsCap = d || null; }).catch(function () { downloadsCap = null; });
+    } catch (e) { downloadsCap = null; }
+  }
+
+  /* ---------- views ---------- */
+  var view = document.getElementById('view');
+
+  function renderIntake() {
+    chatEl = null;
+    var nameIn = h('input', { type: 'text', id: 'f-name', autocomplete: 'given-name', maxlength: '40', placeholder: 'First name only' });
+    var planSel = h('select', { id: 'f-plan' },
+      h('option', { value: '' }, 'Choose your plan'),
+      PLANS.map(function (p) { return h('option', { value: p.id }, p.label); }));
+    var consent = h('input', { type: 'checkbox', id: 'f-consent' });
+    var notice = h('p', { class: 'notice', hidden: true },
+      'This test covers Harvard students enrolled in the Harvard Student Health Program with the Blue Cross Blue Shield of Massachusetts PPO. If you waived the insurance, HUHS is still free for you, but the in-network costs here will not match your plan.');
+    var go = h('button', { class: 'primary', type: 'submit', disabled: true }, 'Start');
+
+    function check() {
+      var p = planSel.value;
+      notice.hidden = p !== 'other';
+      go.disabled = !(nameIn.value.trim() && p && p !== 'other' && consent.checked);
+    }
+    [nameIn, planSel, consent].forEach(function (el) { el.addEventListener('input', check); el.addEventListener('change', check); });
+
+    var form = h('form', { class: 'intake', onsubmit: function (ev) {
+      ev.preventDefault();
+      if (go.disabled) return;
+      S.user = { name: nameIn.value.trim().slice(0, 40), planId: planSel.value, consentAt: new Date().toISOString() };
+      store.set('ioth.harvard.user', S.user);
+      renderChat();
+    } },
+      h('h2', null, 'Before we start'),
+      h('p', { class: 'lede' }, 'This is a research test of a service that suggests where to go for minor care. Replies come from an automated assistant that uses Harvard\u2019s 2026-2027 plan summary and HUHS pages, checked ' + CHECKED_ON + '. It gives estimates, not medical advice. If you use your location, it stays on this device and is not saved. For an emergency, call 911.'),
+      h('div', { class: 'field' }, h('label', { for: 'f-name' }, 'Your first name'), nameIn),
+      h('div', { class: 'field' }, h('label', { for: 'f-plan' }, 'Your health plan'), planSel),
+      notice,
+      h('label', { class: 'consent', for: 'f-consent' }, consent,
+        h('span', null, 'I understand this is a research study, replies are automated estimates, and my messages are saved in this browser for the study log.')),
+      go);
+    view.replaceChildren(form);
+  }
+
+  function renderChat() {
+    chatEl = h('div', { id: 'chat', role: 'log', 'aria-live': 'polite', 'aria-label': 'Conversation' });
+    inputEl = h('textarea', { rows: '1', placeholder: 'What\u2019s wrong, and where?', 'aria-label': 'Your message', maxlength: '500' });
+    sendBtn = h('button', { class: 'send', type: 'button' }, 'Send');
+
+    var examples = [
+      ['Sore throat in Cambridge', 'I have a sore throat and a cough. I\u2019m in Cambridge near Harvard Square'],
+      ['Ankle in Back Bay', 'I rolled my ankle. I\u2019m in Back Bay in Boston'],
+      ['Regular checkup', 'I need a checkup. I\u2019m in Cambridge'],
+      ['Toddler with a fever', 'My toddler has a fever of 101. We\u2019re in Cambridge'],
+      ['Fever while traveling', 'I have a fever and a sore throat. I\u2019m visiting Austin'],
+      ['Safety check', 'I have chest pain. I\u2019m in Allston']
+    ];
+    var exRow = h('div', { class: 'examples' },
+      h('button', { class: 'chip', type: 'button', onclick: useLocation }, 'Use my location'),
+      h('span', null, 'Try an example'),
+      examples.map(function (ex) {
+        return h('button', { class: 'chip', type: 'button', onclick: function () { submit(ex[1]); } }, ex[0]);
+      }));
+    var composer = h('div', { class: 'composer' }, inputEl, sendBtn);
+    view.replaceChildren(chatEl, exRow, composer);
+
+    sendBtn.addEventListener('click', function () { submit(inputEl.value); });
+    inputEl.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); submit(inputEl.value); }
+    });
+    inputEl.addEventListener('input', function () {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 110) + 'px';
+    });
+
+    S.ctx = { loc: null, problem: null, lastProblem: null, awaitingLocation: false, awaitingProblem: false };
+    addBot('Hi ' + S.user.name + '. Tell me what is going on and where you are, and I will tell you where to go and what it costs.');
+    addBot('I am an automated assistant. My costs come from Harvard\u2019s 2026-2027 plan summary, checked ' + CHECKED_ON + '. I cannot judge how serious a symptom is. For an emergency, call 911.', 'note');
+    inputEl.focus();
+  }
+
+  /* ---------- chat plumbing ---------- */
+  function scrollToBottom() { if (chatEl) chatEl.scrollTop = chatEl.scrollHeight; }
+  function addBot(text, cls) {
+    var m = h('div', { class: 'msg bot' + (cls ? ' ' + cls : '') }, text);
+    chatEl.appendChild(m); scrollToBottom(); return m;
+  }
+  function addUser(text) {
+    var m = h('div', { class: 'msg user' }, text);
+    chatEl.appendChild(m); scrollToBottom(); return m;
+  }
+  function setBusy(b) { S.busy = b; if (sendBtn) sendBtn.disabled = b; if (inputEl) inputEl.disabled = b; }
+
+  async function submit(raw) {
+    var text = String(raw || '').trim();
+    if (!text || S.busy || !chatEl) return;
+    inputEl.value = ''; inputEl.style.height = 'auto';
+    addUser(text);
+    setBusy(true);
+    var typing = h('div', { class: 'typing', 'aria-hidden': 'true' }, h('span', { class: 'dot' }), h('span', { class: 'dot' }), h('span', { class: 'dot' }));
+    chatEl.appendChild(typing); scrollToBottom();
+    await sleep(750);
+    typing.remove();
+    var out;
+    try { out = decide(text); } catch (e) {
+      out = { nodes: [h('div', { class: 'msg bot' }, 'Something went wrong on my end. Please try again, or call HUHS at ' + HUHS_PHONE + '.')], log: null };
+    }
+    renderOut(out, text);
+  }
+
+  function renderOut(out, text) {
+    var first = null;
+    out.nodes.forEach(function (n) { chatEl.appendChild(n); if (!first) first = n; });
+    if (first) first.scrollIntoView({ block: 'start', behavior: 'auto' });
+    if (out.log) {
+      var entry = logEvent(text, out.log);
+      if (out.askHeading) attachHeading(entry);
+    }
+    setBusy(false);
+    if (inputEl) inputEl.focus();
+  }
+
+  async function useLocation() {
+    if (S.busy || !chatEl) return;
+    addUser('Use my location');
+    setBusy(true);
+    var typing = h('div', { class: 'typing', 'aria-hidden': 'true' }, h('span', { class: 'dot' }), h('span', { class: 'dot' }), h('span', { class: 'dot' }));
+    chatEl.appendChild(typing); scrollToBottom();
+    var out;
+    try {
+      var pos = await new Promise(function (res, rej) {
+        if (!navigator.geolocation) { rej({ code: 0 }); return; }
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 12000, maximumAge: 60000 });
+      });
+      var geo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      var dH = distMiles(geo, HUHS_GEO), dB = distMiles(geo, BOSTON_GEO), C = S.ctx;
+      if (Math.min(dH, dB) > 15) C.loc = { unknown: 'your location' };
+      else C.loc = { zone: dH <= dB ? 'cambridge' : 'boston', geo: geo };
+      C.awaitingLocation = false;
+      out = respondFromContext('');
+    } catch (e) {
+      out = { log: { result: 'location_unavailable' }, nodes: [msg('I could not get your location here. Your browser may have blocked it, so type a neighborhood instead, like \u201CBack Bay.\u201D')] };
+    }
+    typing.remove();
+    renderOut(out, 'Use my location');
+  }
+
+  /* ---------- decision engine ---------- */
+  function detectZone(t) {
+    for (var i = 0; i < ZONE_ORDER.length; i++) {
+      var z = ZONES[ZONE_ORDER[i]];
+      if (z.strong.test(t) && !(z.exclude && z.exclude.test(t))) return ZONE_ORDER[i];
+    }
+    return null;
+  }
+  function cleanPlace(s) {
+    var x = String(s || '').replace(/[.!?,;:]+$/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    return x || null;
+  }
+  function reasonNoun(kw) { return (kw && NOUN_REASON[kw]) || 'a minor illness or injury'; }
+  function msg(text, cls) { return h('div', { class: 'msg bot' + (cls ? ' ' + cls : '') }, text); }
+
+  function decide(t) {
+    var C = S.ctx;
+
+    // safety first, before anything else
+    if (SELFHARM_RE.test(t)) {
+      return { log: { result: 'safety_988' }, nodes: [h('div', { class: 'msg bot alert' },
+        'I am really sorry you are going through this. Please call or text ',
+        h('a', { href: 'tel:988' }, '988'),
+        ' now to reach the Suicide and Crisis Lifeline. If you are in immediate danger, call ',
+        h('a', { href: 'tel:911' }, '911'), '. You do not have to handle this alone.')] };
+    }
+    if (URGENT_RE.test(t)) {
+      return { log: { result: 'safety_911' }, nodes: [h('div', { class: 'msg bot alert' },
+        'This sounds urgent. Please call ', h('a', { href: 'tel:911' }, '911'),
+        ' or go to the nearest emergency room now. I cannot help with emergencies, so I will not point you to a clinic. Your plan covers ER visits, with a $100 copay that is waived if you are admitted, so please do not wait because of cost.')] };
+    }
+    if (INFANT_RE.test(t)) {
+      return { log: { result: 'safety_infant' }, nodes: [h('div', { class: 'msg bot alert' },
+        'For a baby or newborn, please call your pediatrician or ', h('a', { href: 'tel:911' }, '911'),
+        ', or go to the nearest ER. I cannot judge how serious a baby\u2019s symptoms are, so I will not point you to a clinic.')] };
+    }
+    if (MENTAL_RE.test(t)) {
+      return { log: { result: 'mental_health_pointer' }, nodes: [h('div', { class: 'msg bot' },
+        'Counseling and mental health care at HUHS are covered by your Student Health Fee. To reach CAMHS urgent care, call ',
+        h('a', { href: telHref(CAMHS_PHONE) }, CAMHS_PHONE), ' before you go in. If this is a crisis, call or text ',
+        h('a', { href: 'tel:988' }, '988'), '.')] };
+    }
+
+    // read the message
+    var zone = detectZone(t), place = null;
+    if (!zone) { var pm = t.match(PLACE_CUE); if (pm) place = cleanPlace(pm[1]); }
+    var kwm = t.match(PROBLEM_RE);
+    var kw = kwm ? kwm[0].toLowerCase() : null;
+    var hasProblem = !!kwm || PRIMARY_RE.test(t) || TELE_RE.test(t);
+    var child = CHILD_RE.test(t);
+
+    if (C.awaitingLocation && !zone && !place && !hasProblem) place = cleanPlace(t);
+    if (C.awaitingProblem && !hasProblem && !zone && !place) hasProblem = true;
+
+    // "it's for my child" after an earlier answer
+    if (!hasProblem && child && C.lastProblem && C.loc) {
+      C.problem = Object.assign({}, C.lastProblem, { child: true });
+      hasProblem = true;
+    } else if (hasProblem) {
+      C.problem = { kw: kw, primary: PRIMARY_RE.test(t), tele: TELE_RE.test(t), child: child, needs: detectNeeds(t) };
+    }
+
+    var coords = null;
+    for (var ni = 0; ni < NEIGHBORHOODS.length && !coords; ni++) {
+      if (NEIGHBORHOODS[ni].re.test(t)) coords = { lat: NEIGHBORHOODS[ni].lat, lng: NEIGHBORHOODS[ni].lng };
+    }
+    if (zone) C.loc = { zone: zone, coords: coords };
+    else if (place) C.loc = { unknown: place };
+
+    return respondFromContext(t);
+  }
+
+  function respondFromContext(t) {
+    var C = S.ctx;
+    if (!C.problem && !C.loc) {
+      return { log: null, nodes: [msg(HELLO_RE.test(t) ? 'Tell me what is going on and where you are. For example: \u201Csore throat, in Cambridge.\u201D'
+        : 'I did not catch that. Tell me what is going on and where you are. For example: \u201Csore throat, in Cambridge.\u201D')] };
+    }
+    if (!C.problem && C.loc) {
+      C.awaitingProblem = true; C.awaitingLocation = false;
+      var where = C.loc.geo ? 'near you' : (C.loc.zone ? ZONE_LABEL[C.loc.zone] : C.loc.unknown);
+      return { log: { result: 'asked_problem', area: where }, nodes: [msg('Got it, ' + where + '. What is going on? A few words is enough, like \u201Csore throat\u201D or \u201Ctwisted ankle.\u201D')] };
+    }
+    if (C.problem && !C.loc) {
+      C.awaitingLocation = true; C.awaitingProblem = false;
+      return { log: { result: 'asked_location' }, nodes: [msg('Where are you right now? A city or neighborhood works, like \u201CCambridge\u201D or \u201CBack Bay.\u201D')] };
+    }
+    return recommend(C.problem, C.loc);
+  }
+
+  /* ---------- building the reply ---------- */
+  function bullet(kind, ch) { return h('span', { class: 'bullet ' + kind, 'aria-hidden': 'true' }, ch); }
+  function reasonFor(prob) { return reasonNoun(prob && prob.kw); }
+
+  function signShell(name, addr, statusNode, actions, body) {
+    return h('article', { class: 'sign' },
+      h('div', { class: 'sign-head' }, h('h3', { class: 'sign-name' }, name), addr ? h('p', { class: 'sign-addr' }, addr) : null, statusNode),
+      actions, body);
+  }
+  function sayBox(script) {
+    var copyBtn = h('button', { class: 'copy', type: 'button' }, 'Copy');
+    copyBtn.addEventListener('click', function () { copyText(script, copyBtn); });
+    return h('div', { class: 'say' }, h('div', { class: 'say-label' }, 'What to say'), h('blockquote', null, script), copyBtn);
+  }
+
+  function buildHuhsUrgentSign(prob, lines) {
+    var open = huhsOpen();
+    var status = open
+      ? h('p', { class: 'sign-status' }, bullet('ok', '\u2713'), h('span', null, 'Open now until 6 pm. Covered in full by your Student Health Fee.'))
+      : h('p', { class: 'sign-status' }, bullet('warn', '!'), h('span', null, 'Closed now. Urgent Care is open daily from 8 am to 6 pm. After hours, call the nurse advice line at the same number.'));
+    var actions = h('div', { class: 'sign-actions' },
+      h('a', { class: 'pill', href: telHref(HUHS_PHONE) }, 'Call ' + HUHS_PHONE),
+      h('a', { class: 'pill ghost', href: mapsHref(HUHS_URGENT), target: '_blank', rel: 'noopener' }, 'Directions'));
+    var script = open
+      ? 'Hi, I\u2019m a Harvard student with ' + reasonFor(prob) + '. I\u2019d like to be seen at Urgent Care. Can I walk in, or should I come at a certain time?'
+      : 'Hi, I\u2019m a Harvard student with ' + reasonFor(prob) + '. Urgent Care is closed, so can the nurse advice line help me, and should I come in when it opens at 8 am?';
+    var body = h('div', { class: 'sign-body' },
+      h('p', null, h('strong', null, 'Cost. '), '$0. Urgent care at HUHS is covered in full, with no copay, coinsurance, or deductible.'),
+      lines && lines.length ? h('p', { class: 'quiet' }, lines.join(' ')) : null,
+      h('p', { class: 'quiet' }, 'Call before you walk in. This number cannot take texts.'),
+      h('p', { class: 'quiet' }, 'A map search would show you the closest clinic, but it cannot tell you what you would pay there. At HUHS it is $0.'),
+      sayBox(script));
+    return signShell(HUHS_URGENT.name, HUHS_URGENT.address + ', ' + HUHS_URGENT.city, status, actions, body);
+  }
+
+  function buildHuhsPrimarySign() {
+    var status = h('p', { class: 'sign-status' }, bullet('ok', '\u2713'), h('span', null, 'Covered in full by your Student Health Fee. Routine adult physical exams are covered in full too.'));
+    var actions = h('div', { class: 'sign-actions' },
+      h('a', { class: 'pill', href: telHref(HUHS_PHONE) }, 'Call ' + HUHS_PHONE),
+      h('a', { class: 'pill ghost', href: PORTAL, target: '_blank', rel: 'noopener' }, 'Patient Portal'));
+    var body = h('div', { class: 'sign-body' },
+      h('p', null, h('strong', null, 'Cost. '), '$0 at HUHS. Every student is assigned a primary care provider there each August, and your name is in the Profile section of the portal.'),
+      h('p', { class: 'quiet' }, 'For something that cannot wait for an appointment, HUHS Urgent Care is the better call.'),
+      sayBox('Hi, I\u2019d like to book a visit with my primary care provider.'));
+    return signShell(HUHS_PRIMARY.name, HUHS_PRIMARY.address + ', ' + HUHS_PRIMARY.city, status, actions, body);
+  }
+
+  function buildHuhsTeleSign() {
+    var status = h('p', { class: 'sign-status' }, bullet('warn', '!'), h('span', null, 'Call first. HUHS decides whether a video visit fits your problem.'));
+    var actions = h('div', { class: 'sign-actions' },
+      h('a', { class: 'pill', href: telHref(HUHS_PHONE) }, 'Call ' + HUHS_PHONE),
+      h('a', { class: 'pill ghost', href: BCBS_FIND, target: '_blank', rel: 'noopener' }, 'Blue Cross telehealth'));
+    var body = h('div', { class: 'sign-body' },
+      h('p', null, h('strong', null, 'Cost. '), '$0 for most telemedicine visits through HUHS, which are covered in full.'),
+      h('p', { class: 'quiet' }, 'If you are outside Massachusetts, ask whether HUHS can see you where you are. Blue Cross also lists telehealth providers in Find a Doctor. If you get stuck, call the number on your digital ID card.'),
+      sayBox('Hi, I\u2019m a Harvard student and I\u2019d like to ask about a telemedicine visit.'));
+    return signShell('HUHS telemedicine', 'Video visit from wherever you are', status, actions, body);
+  }
+
+  function buildNetworkSign(p, prob) {
+    var status = h('p', { class: 'sign-status' }, bullet('ok', '\u2713'), h('span', null, 'Listed as in network for your Blue Cross PPO, checked ' + CHECKED_ON));
+    var actions = h('div', { class: 'sign-actions' },
+      p.phone ? h('a', { class: 'pill', href: telHref(p.phone) }, 'Call ' + p.phone) : null,
+      h('a', { class: 'pill ghost', href: mapsHref(p), target: '_blank', rel: 'noopener' }, 'Directions'));
+    var script = 'Hi, I have the Harvard Student Health Insurance Plan through Blue Cross Blue Shield of Massachusetts, the PPO. Before I check in, can you confirm you are in network for my plan? I am here for ' + reasonFor(prob) + '.';
+    var body = h('div', { class: 'sign-body' },
+      h('p', null, h('strong', null, 'Cost. '), '$35 copay per visit in network. Out of network you pay 30% after a $250 deductible.'),
+      p._lines && p._lines.length ? h('p', { class: 'quiet' }, p._lines.join(' ')) : null,
+      sayBox(script));
+    return signShell(p.name, p.address + ', ' + p.city, status, actions, body);
+  }
+
+  function infoList(title, items) {
+    return h('section', { class: 'nearby' }, h('h3', null, title),
+      h('ul', null, items.map(function (it) { return h('li', null, it); })));
+  }
+  function nearbyBlock(title, list) {
+    if (!list.length) return null;
+    return h('section', { class: 'nearby' }, h('h3', null, title),
+      h('ul', null, list.map(function (p) {
+        return h('li', null, h('div', null, p.name),
+          h('div', { class: 'sub' }, p.address + ', ' + p.city + (p.phone ? ' \u2022 ' : ''),
+            p.phone ? h('a', { href: telHref(p.phone) }, p.phone) : null),
+          p._lines && p._lines.length ? h('div', { class: 'sub' }, p._lines.join(' ')) : null);
+      })));
+  }
+  function distMiles(p, q) {
+    var R = 3958.8, r = Math.PI / 180;
+    var dLat = (q.lat - p.lat) * r, dLng = (q.lng - p.lng) * r;
+    var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(p.lat * r) * Math.cos(q.lat * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(x));
+  }
+  function fmtMiles(m) { return m < 0.25 ? 'Under a quarter mile' : 'About ' + (Math.round(m * 2) / 2) + ' mi'; }
+  function hourLabel(hr) { var x = hr % 12 === 0 ? 12 : hr % 12; return x + (hr < 12 ? ' am' : ' pm'); }
+  function etNow() {
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(new Date());
+      var o = { day: 'Mon', hr: 12, mn: 0 };
+      parts.forEach(function (q) {
+        if (q.type === 'weekday') o.day = q.value;
+        if (q.type === 'hour') o.hr = parseInt(q.value, 10) % 24;
+        if (q.type === 'minute') o.mn = parseInt(q.value, 10);
+      });
+      return { weekend: o.day === 'Sat' || o.day === 'Sun', t: o.hr + o.mn / 60 };
+    } catch (e) { return { weekend: false, t: 12 }; }
+  }
+  function openState(p) {
+    if (!p.hours) return null;
+    var n = etNow(), win = n.weekend ? p.hours.we : p.hours.wk;
+    return n.t >= win[0] && n.t < win[1] ? { open: true, closes: win[1] } : { open: false };
+  }
+  var NEED_NAME = { xray: 'X-ray', stitches: 'stitches' };
+  function detectNeeds(t) {
+    var n = [];
+    if (/\b(ankle|wrist|knee|elbow|shoulder|foot|toe|finger|hand|arm|leg|fell|fall|twisted|rolled|sprain\w*|fracture\w*|broke\w*)\b/i.test(t)) n.push('xray');
+    if (/\b(cut|gash|laceration|stitches|sliced)\b/i.test(t)) n.push('stitches');
+    return n;
+  }
+  // Sorts in-network clinics by closeness, then adjusts for what the clinic lists and whether it is open.
+  function rankNetwork(anchor, exact, needs) {
+    var list = NETWORK.filter(function (p) { return p.type === 'urgent_care'; }).map(function (p) {
+      var d = distMiles(anchor, p), score = d, lines = [];
+      if (exact) lines.push(fmtMiles(d) + ' from you.');
+      (needs || []).forEach(function (need) {
+        var v = p.services && p.services[need], nm = NEED_NAME[need];
+        if (v === true) lines.push('Listed with ' + nm + '.');
+        else if (v === 'call') { lines.push('Listed with ' + nm + ', but the clinic says it is not always available. Call first.'); score += 1; }
+        else { lines.push(nm.charAt(0).toUpperCase() + nm.slice(1) + ' not checked. Ask when you call.'); score += 1; }
+      });
+      var st = openState(p);
+      if (st && st.open) lines.push('Open until ' + hourLabel(st.closes) + ' per its website.');
+      else if (st && !st.open) { lines.push('Closed right now per its website.'); score += 50; }
+      else score += 0.5;
+      return Object.assign({}, p, { _d: d, _score: score, _lines: lines });
+    });
+    return list.sort(function (a, b) { return a._score - b._score; });
+  }
+  function huhsLines(anchor, exact, needs) {
+    var lines = [];
+    if (exact) lines.push(fmtMiles(distMiles(anchor, HUHS_GEO)) + ' from you.');
+    if ((needs || []).indexOf('xray') >= 0) lines.push('X-rays are covered at HUHS under your Student Health Fee.');
+    return lines;
+  }
+  function findDoctorItem() {
+    return [h('a', { href: BCBS_FIND, target: '_blank', rel: 'noopener' }, 'Search Blue Cross Find a Doctor'),
+      h('div', { class: 'sub' }, 'In Massachusetts, choose the network \u201CPPO or EPO with Hospital Choice Cost Share Feature.\u201D Outside Massachusetts, choose PPO/EPO.')];
+  }
+  function memberItem() {
+    return ['Questions about your plan? Call HUSHP Member Services at ',
+      h('a', { href: telHref(MEMBER_PHONE) }, MEMBER_PHONE), ', or the number on your digital ID card.'];
+  }
+  function chipRow(labels, onPick) {
+    var row = h('div', { class: 'chips' });
+    labels.forEach(function (l) {
+      row.appendChild(h('button', { class: 'chip', type: 'button', onclick: function () { row.remove(); onPick(l); } }, l));
+    });
+    return row;
+  }
+  function finePrint() {
+    return h('p', { class: 'fine' }, 'Costs come from Harvard\u2019s 2026-2027 plan summary, and hours can change on holidays, so call first.');
+  }
+
+  function awayNodes(place, prob) {
+    var opener = prob && prob.child
+      ? 'HUHS does not see children for sick visits. Your plan covers kids in network: $0 with Atrius Health providers and $35 with other in-network providers. I have not checked specific clinics near ' + place + ', so use Find a Doctor below.'
+      : 'I do not have clinics checked near ' + place + ', so I will not guess. Your plan still covers you across the US through the Blue Cross PPO network.';
+    var costs = prob && prob.child
+      ? ['Out of network, a sick visit costs 30% after a $250 deductible.']
+      : ['In network, urgent care is a $35 copay, and so is a doctor\u2019s office visit for a sick visit.',
+         'Out of network, you pay 30% after a $250 deductible.',
+         'Emergency room: $100 copay, waived if you are admitted.'];
+    return [msg(opener),
+      infoList(prob && prob.child ? 'Finding a doctor for your child' : 'What your plan pays away from Harvard',
+        costs.concat([findDoctorItem(), memberItem(),
+          ['HUHS can still advise by phone at ', h('a', { href: telHref(HUHS_PHONE) }, HUHS_PHONE), '. Ask whether a telemedicine visit is possible where you are.']])),
+      finePrint()];
+  }
+
+  function recommend(prob, loc) {
+    var C = S.ctx, nodes = [], area, need, rec = '';
+    function done(result) {
+      C.lastProblem = prob; C.problem = null; C.awaitingLocation = false; C.awaitingProblem = false;
+      return { nodes: nodes, log: { result: result, area: area, need: need, recommended: rec }, askHeading: result === 'recommended' };
+    }
+
+    if (loc.unknown) {
+      area = loc.unknown; need = prob.child ? 'child' : (prob.tele ? 'telehealth' : (prob.primary ? 'primary' : 'urgent'));
+      nodes = awayNodes(loc.unknown, prob);
+      return done('no_coverage');
+    }
+
+    var zone = loc.zone; area = ZONE_LABEL[zone];
+    var anchor = loc.geo || loc.coords || ZONE_CENTER[zone];
+    var exact = !!(loc.geo || loc.coords);
+    var needs = prob.needs || [];
+
+    if (prob.child) {
+      need = 'child';
+      nodes = awayNodes(area, prob);
+      return done('no_coverage');
+    }
+    if (prob.tele) {
+      need = 'telehealth'; rec = 'HUHS telemedicine';
+      nodes = [msg('Telemedicine through HUHS costs nothing, so I would start there:'), buildHuhsTeleSign(), finePrint()];
+      return done('recommended');
+    }
+    if (prob.primary) {
+      need = 'primary'; rec = 'HUHS primary care';
+      nodes = [msg('For a regular visit, your HUHS primary care team is the place to start:'), buildHuhsPrimarySign(), finePrint()];
+      return done('recommended');
+    }
+
+    need = 'urgent'; rec = 'HUHS Urgent Care';
+    var open = huhsOpen();
+    var what = prob.kw && NOUN_REASON[prob.kw] ? ' for ' + NOUN_REASON[prob.kw] : '';
+    var rows = rankNetwork(anchor, exact, needs);
+    var extra = [];
+    if (rows.length) {
+      if (open) {
+        extra = [nearbyBlock('If HUHS is too far or full, these clinics are in network ($35 copay)', rows.slice(0, 3))];
+      } else {
+        extra = [buildNetworkSign(rows[0], prob), nearbyBlock('More in-network clinics ($35 copay)', rows.slice(1, 3))];
+      }
+    } else {
+      var items = [findDoctorItem()];
+      if (!open) items.unshift('If it cannot wait until morning and the problem is serious, go to the ER or call 911. The ER copay is $100, waived if you are admitted.');
+      items.unshift('Other urgent care that takes your plan costs a $35 copay per visit.');
+      extra = [infoList(open ? 'Need another option?' : 'HUHS is closed right now', items)];
+    }
+    var where = loc.geo ? 'Near you' : 'In ' + area;
+    var lead = where + ', I would start with HUHS' + what + ':';
+    if (zone === 'boston' || loc.geo) lead = where + ', HUHS Urgent Care is free for you' + what + '. It is in Harvard Square:';
+    if (!open && rows.length) lead = where + ', HUHS is closed right now. You can call its nurse advice line, or try an in-network clinic below. Call to confirm it is open:';
+    nodes = [msg(lead), buildHuhsUrgentSign(prob, huhsLines(anchor, exact, needs))].concat(extra, [finePrint()]).filter(Boolean);
+    return done('recommended');
+  }
+
+  /* ---------- study log ---------- */
+  function logEvent(message, o) {
+    var plan = planById(S.user.planId);
+    var e = {
+      time: new Date().toISOString(), name: S.user.name, plan: plan.short, message: message,
+      area: o.area || '', need: o.need || '', result: o.result || '', recommended: o.recommended || '', heading: ''
+    };
+    S.log.push(e); store.set('ioth.harvard.log', S.log);
+    return e;
+  }
+  function attachHeading(entry) {
+    var row = h('div', { class: 'chips' });
+    var q = h('p', { class: 'fine' }, 'Where are you heading?');
+    ['To the first place', 'Somewhere else', 'Not sure yet'].forEach(function (label) {
+      row.appendChild(h('button', { class: 'chip', type: 'button', onclick: function () {
+        q.remove(); row.remove();
+        addUser(label);
+        entry.heading = label; store.set('ioth.harvard.log', S.log);
+        addBot(label === 'To the first place' ? 'Good. Call ahead so they know you are coming. Feel better soon.'
+          : label === 'Somewhere else' ? 'Okay. If it is not HUHS, ask whether they are in network for your Blue Cross PPO before you check in.'
+          : 'No rush. Your options stay in the thread above.');
+      } }, label));
+    });
+    chatEl.appendChild(q); chatEl.appendChild(row);
+  }
+  function csvEscape(v) { var s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function toCsv() {
+    var cols = ['time', 'name', 'plan', 'message', 'area', 'need', 'result', 'recommended', 'heading'];
+    var rows = [cols.join(',')];
+    S.log.forEach(function (e) { rows.push(cols.map(function (c) { return csvEscape(e[c]); }).join(',')); });
+    return rows.join('\n');
+  }
+  var dlg = document.getElementById('logDlg');
+  function renderLog() {
+    var n = S.log.length;
+    var recs = S.log.filter(function (e) { return e.result === 'recommended'; }).length;
+    var head = S.log.filter(function (e) { return e.heading === 'To the first place'; }).length;
+    document.getElementById('logSub').textContent =
+      n + ' entries. ' + recs + ' recommendations, ' + head + ' where the person said they were heading to the first place. Saved in this browser only.';
+    var wrap = document.getElementById('logTable');
+    if (!n) { wrap.replaceChildren(h('p', { class: 'sub' }, 'Nothing logged yet. Send a message in the chat to see entries here.')); return; }
+    var cols = [['time', 'Time'], ['name', 'Name'], ['message', 'Message'], ['area', 'Area'], ['result', 'Result'], ['recommended', 'Recommended'], ['heading', 'Heading']];
+    var table = h('table', null,
+      h('thead', null, h('tr', null, cols.map(function (c) { return h('th', { scope: 'col' }, c[1]); }))),
+      h('tbody', null, S.log.slice().reverse().map(function (e) {
+        return h('tr', null, cols.map(function (c) {
+          var v = e[c[0]] || '';
+          if (c[0] === 'time') v = new Date(v).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+          return h('td', null, v);
+        }));
+      })));
+    wrap.replaceChildren(table);
+  }
+  document.getElementById('logBtn').addEventListener('click', function () {
+    renderLog();
+    document.getElementById('dlBtn').hidden = !downloadsCap;
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+  });
+  document.getElementById('closeBtn').addEventListener('click', function () { dlg.close(); });
+  document.getElementById('cpBtn').addEventListener('click', function (ev) { copyText(toCsv(), ev.currentTarget); });
+  document.getElementById('clrBtn').addEventListener('click', function () {
+    if (!S.log.length) return;
+    if (window.confirm('Clear all log entries from this browser?')) { S.log = []; store.del('ioth.harvard.log'); renderLog(); }
+  });
+  document.getElementById('dlBtn').addEventListener('click', async function (ev) {
+    var btn = ev.currentTarget, old = btn.textContent;
+    if (!downloadsCap || !S.log.length) return;
+    try { await downloadsCap.save({ filename: 'insurance-on-the-go-study-log.csv', data: toCsv() }); btn.textContent = 'Saved'; }
+    catch (e) { btn.textContent = (e && e.code === 'declined') ? old : 'Use Copy CSV'; }
+    setTimeout(function () { btn.textContent = old; }, 1600);
+  });
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    S.user = null; store.del('ioth.harvard.user'); renderIntake();
+  });
+
+  /* ---------- start ---------- */
+  if (S.user && S.user.name && planById(S.user.planId).ok) renderChat(); else renderIntake();
+})();
+</script>
+</body>
+</html>
